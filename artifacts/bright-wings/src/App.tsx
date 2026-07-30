@@ -376,12 +376,42 @@ function ImpactStats() {
 function Donate() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const [selectedAmount, setSelectedAmount] = useState<number>(1000);
+  const [customAmount, setCustomAmount] = useState<string>('');
+  const [isCustom, setIsCustom] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      if (document.body.contains(script)) document.body.removeChild(script);
+    };
+  }, []);
+
+  const handleDonate = () => {
+    const amount = isCustom ? parseInt(customAmount) : selectedAmount;
+    if (!amount || amount < 1) return;
+    setIsLoading(true);
+    const options = {
+      key: 'rzp_test_YOUR_KEY_HERE', // Replace with your Razorpay Key ID from razorpay.com
+      amount: amount * 100,
+      currency: 'INR',
+      name: 'Bright Wings Foundation',
+      description: 'Donation for children with disabilities',
+      handler: (_response: Record<string, string>) => {
+        alert('Thank you for your generous donation! Your support changes lives.');
+        setIsLoading(false);
+      },
+      prefill: { name: '', email: '', contact: '' },
+      notes: { purpose: 'Donation — Bright Wings Foundation' },
+      theme: { color: '#4A90E2' },
+      modal: { ondismiss: () => setIsLoading(false) },
+    };
+    const rzp = new (window as Record<string, unknown>).Razorpay(options);
+    (rzp as { open: () => void }).open();
   };
 
   return (
@@ -404,16 +434,69 @@ function Donate() {
           >
             Your donation helps provide education, therapy, medical care, and
             opportunities for children with disabilities. Every contribution,
-            big or small, creates meaningful change in a child's life.
+            big or small, creates meaningful change.
           </p>
+
+          <div className="flex flex-wrap justify-center gap-3 mb-6" data-testid="donate-amount-selector">
+            {([500, 1000, 2000, 5000] as const).map((amt) => (
+              <button
+                key={amt}
+                onClick={() => { setSelectedAmount(amt); setIsCustom(false); setCustomAmount(''); }}
+                className={`px-6 py-3 rounded-full font-semibold text-base border-2 transition-all duration-200 ${
+                  !isCustom && selectedAmount === amt
+                    ? 'bg-primary text-primary-foreground border-primary shadow-md scale-105'
+                    : 'bg-background text-foreground border-border hover:border-primary hover:text-primary'
+                }`}
+                data-testid={`button-amount-${amt}`}
+              >
+                ₹{amt.toLocaleString('en-IN')}
+              </button>
+            ))}
+            <button
+              onClick={() => setIsCustom(true)}
+              className={`px-6 py-3 rounded-full font-semibold text-base border-2 transition-all duration-200 ${
+                isCustom
+                  ? 'bg-primary text-primary-foreground border-primary shadow-md scale-105'
+                  : 'bg-background text-foreground border-border hover:border-primary hover:text-primary'
+              }`}
+              data-testid="button-amount-custom"
+            >
+              Custom
+            </button>
+          </div>
+
+          {isCustom && (
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/50 font-medium text-lg">₹</span>
+                <input
+                  type="number"
+                  placeholder="Enter amount"
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(e.target.value)}
+                  className="pl-8 pr-4 py-3 rounded-xl border-2 border-border focus:border-primary outline-none text-center text-lg w-52 bg-background"
+                  min="1"
+                  data-testid="input-custom-amount"
+                />
+              </div>
+            </div>
+          )}
+
           <Button
-            onClick={() => scrollToSection('contact')}
+            onClick={handleDonate}
+            disabled={isLoading || (isCustom && (!customAmount || parseInt(customAmount) < 1))}
             size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-lg px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-lg px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
             data-testid="button-donate-main"
           >
-            Donate Now
+            {isLoading
+              ? 'Processing...'
+              : `Donate ₹${isCustom ? (customAmount || '0') : selectedAmount.toLocaleString('en-IN')} via Razorpay`}
           </Button>
+
+          <p className="mt-4 text-sm text-foreground/50" data-testid="text-razorpay-note">
+            Secured by Razorpay · UPI, Cards &amp; Net Banking accepted
+          </p>
         </motion.div>
       </div>
     </section>
@@ -447,19 +530,19 @@ function Contact() {
             <div className="flex items-center gap-3" data-testid="text-contact-phone">
               <span className="text-2xl">📞</span>
               <a
-                href="tel:+919876543210"
+                href="tel:+918081939363"
                 className="text-foreground/80 hover:text-primary transition-colors"
               >
-                +91 98765 43210
+                +91 8081939363
               </a>
             </div>
             <div className="flex items-center gap-3" data-testid="text-contact-email">
               <span className="text-2xl">✉</span>
               <a
-                href="mailto:contact@brightwings.org"
+                href="mailto:bright4wings@gmail.com"
                 className="text-foreground/80 hover:text-primary transition-colors"
               >
-                contact@brightwings.org
+                bright4wings@gmail.com
               </a>
             </div>
           </div>

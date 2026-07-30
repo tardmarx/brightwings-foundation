@@ -1,0 +1,27 @@
+kind = "slides"
+previewPath = "/bright-wings-deck/"
+title = "Bright Wings Foundation Deck"
+version = "1.0.0"
+id = "artifacts/bright-wings-deck"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/bright-wings-deck/" ]
+localPort = 24408
+
+[services.development]
+run = "pnpm --filter @workspace/bright-wings-deck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bright-wings-deck", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/bright-wings-deck/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24408"
+BASE_PATH = "/bright-wings-deck/"
