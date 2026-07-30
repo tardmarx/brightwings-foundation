@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Bright Wings Foundation"
+version = "1.0.0"
+id = "artifacts/bright-wings"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23232
+
+[services.development]
+run = "pnpm --filter @workspace/bright-wings run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bright-wings", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/bright-wings/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23232"
+BASE_PATH = "/"
