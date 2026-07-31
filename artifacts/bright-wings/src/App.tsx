@@ -396,7 +396,7 @@ function Donate() {
     if (!amount || amount < 1) return;
     setIsLoading(true);
     const options = {
-      key: 'rzp_test_YOUR_KEY_HERE', // Replace with your Razorpay Key ID from razorpay.com
+      key: import.meta.env.VITE_RAZORPAY_KEY as string,
       amount: amount * 100,
       currency: 'INR',
       name: 'Bright Wings Foundation',
