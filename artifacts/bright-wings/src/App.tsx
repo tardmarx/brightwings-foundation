@@ -664,135 +664,250 @@ function Testimonials() {
 function Donate() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
+
   const [selectedAmount, setSelectedAmount] = useState<number>(1000);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isCustom, setIsCustom] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const upiId = '8081939363@ybl';
 
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
     document.body.appendChild(script);
+
     return () => {
-      if (document.body.contains(script)) document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
+  const copyUPI = async () => {
+    try {
+      await navigator.clipboard.writeText(upiId);
+      alert('UPI ID copied!');
+    } catch {
+      alert(`UPI ID: ${upiId}`);
+    }
+  };
+
   const handleDonate = () => {
     const amount = isCustom ? parseInt(customAmount) : selectedAmount;
+
     if (!amount || amount < 1) return;
+
+    const Razorpay = (window as any).Razorpay;
+
+    if (!Razorpay) {
+      alert('Payment system is still loading. Please try again.');
+      return;
+    }
+
     setIsLoading(true);
+
     const options = {
       key: import.meta.env.VITE_RAZORPAY_KEY as string,
       amount: amount * 100,
       currency: 'INR',
       name: 'Bright Wings Foundation',
       description: 'Donation for children with disabilities',
+
       handler: (_response: Record<string, string>) => {
-        alert('Thank you for your generous donation! Your support changes lives.');
+        alert(
+          'Thank you for your generous donation! Your support changes lives.'
+        );
         setIsLoading(false);
       },
-      prefill: { name: '', email: '', contact: '' },
-      notes: { purpose: 'Donation — Bright Wings Foundation' },
-      theme: { color: '#4A90E2' },
-      modal: { ondismiss: () => setIsLoading(false) },
+
+      prefill: {
+        name: '',
+        email: '',
+        contact: '',
+      },
+
+      notes: {
+        purpose: 'Donation — Bright Wings Foundation',
+      },
+
+      theme: {
+        color: '#4A90E2',
+      },
+
+      modal: {
+        ondismiss: () => setIsLoading(false),
+      },
     };
-    const rzp = new (window as Record<string, unknown>).Razorpay(options);
-    (rzp as { open: () => void }).open();
+
+    const rzp = new Razorpay(options);
+    rzp.open();
   };
+
+  const amounts = [500, 1000, 2500, 5000];
 
   return (
     <section id="donate" className="py-24 bg-background" ref={ref}>
-      <div className="max-w-4xl mx-auto px-6 text-center">
+      <div className="max-w-5xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.8 }}
+          className="text-center"
         >
           <span className="text-sm font-semibold text-primary uppercase tracking-widest mb-3 block">
             Support Our Mission
           </span>
-          <h2
-            className="text-4xl md:text-5xl font-bold text-foreground mb-5"
-            data-testid="text-donate-heading"
-          >
+
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-5">
             Help Change a Life Today
           </h2>
-          <p
-            className="text-lg md:text-xl text-foreground/75 leading-relaxed mb-10 max-w-2xl mx-auto"
-            data-testid="text-donate-description"
-          >
-            Your donation provides education, therapy, and medical care for
-            children with disabilities. Every rupee creates meaningful change.
+
+          <p className="text-lg md:text-xl text-foreground/70 max-w-2xl mx-auto mb-12">
+            Your donation helps provide education, therapy, healthcare and
+            opportunities for children with disabilities.
           </p>
 
-          <div className="flex flex-wrap justify-center gap-3 mb-6" data-testid="donate-amount-selector">
-            {([500, 1000, 2000, 5000] as const).map((amt) => (
-              <button
-                key={amt}
-                onClick={() => { setSelectedAmount(amt); setIsCustom(false); setCustomAmount(''); }}
-                className={`px-6 py-3 rounded-full font-semibold text-base border-2 transition-all duration-200 ${
-                  !isCustom && selectedAmount === amt
-                    ? 'bg-primary text-white border-primary shadow-md scale-105'
-                    : 'bg-background text-foreground border-border hover:border-primary hover:text-primary'
-                }`}
-                data-testid={`button-amount-${amt}`}
-              >
-                ₹{amt.toLocaleString('en-IN')}
-              </button>
-            ))}
-            <button
-              onClick={() => setIsCustom(true)}
-              className={`px-6 py-3 rounded-full font-semibold text-base border-2 transition-all duration-200 ${
-                isCustom
-                  ? 'bg-primary text-white border-primary shadow-md scale-105'
-                  : 'bg-background text-foreground border-border hover:border-primary hover:text-primary'
-              }`}
-              data-testid="button-amount-custom"
-            >
-              Custom
-            </button>
-          </div>
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* UPI QR DONATION */}
+            <div className="bg-white border border-border rounded-3xl shadow-xl p-8">
+              <div className="text-4xl mb-3">🇮🇳</div>
 
-          {isCustom && (
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/50 font-medium text-lg">₹</span>
-                <input
-                  type="number"
-                  placeholder="Enter amount"
-                  value={customAmount}
-                  onChange={(e) => setCustomAmount(e.target.value)}
-                  className="pl-8 pr-4 py-3 rounded-xl border-2 border-border focus:border-primary outline-none text-center text-lg w-52 bg-background"
-                  min="1"
-                  data-testid="input-custom-amount"
+              <h3 className="text-2xl font-bold text-foreground mb-2">
+                Donate via UPI
+              </h3>
+
+              <p className="text-foreground/60 mb-6">
+                Scan using any UPI app
+              </p>
+
+              <div className="bg-white border border-border rounded-2xl p-4 max-w-[270px] mx-auto mb-6">
+                <img
+                  src={`${BASE}phonepe-qr.png`}
+                  alt="Bright Wings Foundation UPI donation QR code"
+                  className="w-full h-auto rounded-xl"
                 />
               </div>
+
+              <p className="text-sm text-foreground/50 mb-2">
+                UPI ID
+              </p>
+
+              <button
+                type="button"
+                onClick={copyUPI}
+                className="bg-primary/10 text-primary font-semibold px-5 py-3 rounded-xl hover:bg-primary/15 transition"
+              >
+                {upiId}
+              </button>
+
+              <p className="text-xs text-foreground/45 mt-2">
+                Tap to copy UPI ID
+              </p>
+
+              <p className="text-sm text-foreground/50 mt-5">
+                PhonePe · Google Pay · Paytm · BHIM · Any UPI App
+              </p>
             </div>
-          )}
 
-          <Button
-            onClick={handleDonate}
-            disabled={isLoading || (isCustom && (!customAmount || parseInt(customAmount) < 1))}
-            size="lg"
-            className="bg-primary hover:bg-primary/90 text-white font-semibold text-lg px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
-            data-testid="button-donate-main"
-          >
-            {isLoading
-              ? 'Processing...'
-              : `Donate ₹${isCustom ? (customAmount || '0') : selectedAmount.toLocaleString('en-IN')} via Razorpay`}
-          </Button>
+            {/* RAZORPAY DONATION */}
+            <div className="bg-white border border-border rounded-3xl shadow-xl p-8">
+              <div className="text-4xl mb-3">💳</div>
 
-          <p className="mt-4 text-sm text-foreground/45" data-testid="text-razorpay-note">
-            Secured by Razorpay · UPI, Cards &amp; Net Banking accepted
+              <h3 className="text-2xl font-bold text-foreground mb-2">
+                Secure Online Donation
+              </h3>
+
+              <p className="text-foreground/60 mb-7">
+                Choose your donation amount
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {amounts.map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => {
+                      setSelectedAmount(amount);
+                      setIsCustom(false);
+                    }}
+                    className={`py-3 rounded-xl font-semibold border transition ${
+                      !isCustom && selectedAmount === amount
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-background text-foreground border-border hover:border-primary'
+                    }`}
+                  >
+                    ₹{amount.toLocaleString('en-IN')}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsCustom(true)}
+                className={`w-full py-3 rounded-xl font-semibold border mb-4 transition ${
+                  isCustom
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-background text-foreground border-border hover:border-primary'
+                }`}
+              >
+                Custom Amount
+              </button>
+
+              {isCustom && (
+                <div className="mb-5">
+                  <input
+                    type="number"
+                    min="1"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    placeholder="Enter amount in ₹"
+                    className="w-full border border-border rounded-xl px-4 py-3 outline-none focus:border-primary"
+                  />
+                </div>
+              )}
+
+              <Button
+                onClick={handleDonate}
+                disabled={isLoading}
+                size="lg"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-semibold rounded-full py-6"
+              >
+                {isLoading
+                  ? 'Processing...'
+                  : `Donate ₹${
+                      isCustom
+                        ? customAmount || '0'
+                        : selectedAmount.toLocaleString('en-IN')
+                    }`}
+              </Button>
+
+              <div className="mt-6 border-t border-border pt-5">
+                <p className="text-sm font-medium text-foreground/70">
+                  Secure payment options
+                </p>
+
+                <p className="text-sm text-foreground/50 mt-2">
+                  UPI · Credit Cards · Debit Cards · Net Banking
+                </p>
+
+                <p className="text-xs text-foreground/40 mt-3">
+                  Secure checkout powered by Razorpay
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="mt-9 text-sm text-foreground/50">
+            Every contribution, big or small, helps create a more inclusive
+            future for a child.
           </p>
         </motion.div>
       </div>
     </section>
   );
 }
-
 /* ─── Contact ────────────────────────────────────────────────────────────── */
 function Contact() {
   const ref = useRef(null);
